@@ -108,7 +108,7 @@ string script = @"<script type='text/javascript'>
       );
     });
 
-    lastFoundText = "";
+    lastFoundText = '';
     currentIndex = 0;
   }
 </script>
