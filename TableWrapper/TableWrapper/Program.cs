@@ -18,7 +18,7 @@ string script = @"<script type='text/javascript'>
     clearSelection();
 
     lastFoundText = text;
-    var ps = document.querySelectorAll('a, p'');
+    var ps = document.querySelectorAll('a, p');
 
     for (const p of ps) {
       if (p.textContent.includes(text)) {
