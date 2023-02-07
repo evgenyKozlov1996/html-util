@@ -56,7 +56,7 @@ string script = @"<script type='text/javascript'>
     currentIndex++;
     if (currentIndex < arr.length) {
       // Clear previous selection
-      arr[currentIndex - 1].innerHTML = arr[currentIndex].innerHTML.replaceAll(
+      arr[currentIndex - 1].innerHTML = arr[currentIndex - 1].innerHTML.replaceAll(
         `background-color: orange`,
         `background-color: yellow`
       );
@@ -74,7 +74,7 @@ string script = @"<script type='text/javascript'>
     currentIndex--;
     if (currentIndex >= 0) {
       // Clear previous selection
-      arr[currentIndex + 1].innerHTML = arr[currentIndex].innerHTML.replaceAll(
+      arr[currentIndex + 1].innerHTML = arr[currentIndex + 1].innerHTML.replaceAll(
         `background-color: orange`,
         `background-color: yellow`
       );
