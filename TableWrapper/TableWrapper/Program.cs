@@ -4,116 +4,182 @@ using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 
-string html = System.IO.File.ReadAllText(@"D:\Additional Work\textbook\index.html");
+string html = System.IO.File.ReadAllText(@"C:\AdditionalWork\textbook\index.html");
 
 string script = @"<script type='text/javascript'>
-  var arr = [];
-  var currentIndex = 0;
+  var foundElems = [];
+      var currentIndex = 0;
 
-  var lastScrolled = 0;
+      var lastScrolled = 0;
 
-  var lastFoundText;
+      var lastFoundText;
 
-  function findAndScrollTo(text) {
-    clearSelection();
-
-    lastFoundText = text;
-    var ps = document.querySelectorAll('a, p');
-
-    for (const p of ps) {
-      if (p.textContent.includes(text)) {
-        arr = arr.concat(p);
+      function onlyUnique(value, index, array) {
+        return array.indexOf(value) === index;
       }
-    }
 
-    // Цвет найденного слова
-    if (arr.length > 0) {
-      arr.forEach((p) => {
-        p.innerHTML = p.innerText.replaceAll(
-          text,
-          `<span class='search-text' style='background-color: yellow'>${text}</span>`
-        );
-      });
+      function findAndScrollTo(text) {
+        clearSelection();
 
-      currentIndex = 0;
-      arr[currentIndex].scrollIntoView(true);
-      arr[currentIndex].innerHTML = arr[currentIndex].innerHTML.replaceAll(
-        `background-color: yellow`,
-        `background-color: orange`
-      );
-    }
-  }
+        lastFoundText = text;
 
-  function getFoundItemsCount() {
-    return arr.length;
-  }
+        if(!text){
+          return;
+        }
 
-  function getCurrentIndex() {
-    return currentIndex;
-  }
+        // get the body of the document
+        var body = document.querySelector(""body"").innerHTML;
 
-  function scrollToNext() {
-    currentIndex++;
-    if (currentIndex < arr.length) {
-      // Clear previous selection
-      arr[currentIndex - 1].innerHTML = arr[currentIndex - 1].innerHTML.replaceAll(
-        `background-color: orange`,
-        `background-color: yellow`
-      );
-      arr[currentIndex].scrollIntoView(true);
-      arr[currentIndex].innerHTML = arr[currentIndex].innerHTML.replaceAll(
-        `background-color: yellow`,
-        `background-color: orange`
-      );
-    } else {
-      currentIndex--;
-    }
-  }
+        var regEx = new RegExp(text, ""ig"");
 
-  function scrollToPrevious() {
-    currentIndex--;
-    if (currentIndex >= 0) {
-      // Clear previous selection
-      arr[currentIndex + 1].innerHTML = arr[currentIndex + 1].innerHTML.replaceAll(
-        `background-color: orange`,
-        `background-color: yellow`
-      );
+        let result,
+          indices = [];
 
-      arr[currentIndex].scrollIntoView(true);
-      // Set current selection if prev item exist
-      arr[currentIndex].innerHTML = arr[currentIndex].innerHTML.replaceAll(
-        `background-color: yellow`,
-        `background-color: orange`
-      );
-    } else {
-      currentIndex++;
-    }
-  }
+        while ((result = regEx.exec(body))) {
+          indices.push({ index: result.index, val: result[0] });
+        }
 
-  function saveScrollPosition() {
-    lastScrolled = window.pageYOffset;
-    return lastScrolled;
-  }
+        if (indices.length == 0) {
+          return;
+        }
 
-  function scrollToLastPosition(position) {
-    document.documentElement.scrollTop = position;
-    document.body.scrollTop = position;
-  }
+        // filter needs to remove all undefined values from array
+        var foundInText = indices
+          .map((charIndexPair, ind) => {
+            var startSearchIndex = charIndexPair.index;
 
-  function clearSelection() {
-    arr.forEach((p) => {
-      p.innerHTML = p.innerHTML.replaceAll(
-        `<span class='search-text' style='background-color: yellow'>${lastFoundText}</span>`,
-        lastFoundText
-      );
-    });
+            while (
+              startSearchIndex >= 0 &&
+              body[startSearchIndex] != "">"" &&
+              body[startSearchIndex] != ""<""
+            ) {
+              startSearchIndex--;
+            }
 
-    lastFoundText = '';
-    currentIndex = 0;
-  }
+            if (startSearchIndex < 0) {
+              return;
+            }
+
+            if (body[startSearchIndex] == ""<"") {
+              return;
+            }
+
+            if (body[startSearchIndex] == "">"") {
+              return charIndexPair;
+            }
+          })
+          .filter((x) => x);
+
+        if (foundInText.length == 0) {
+          return;
+        }
+
+        // Replace found in-text elements to <span>s
+        foundInText.forEach((foundSubstr, ind) => {
+          let replacement = `<span class=""search-text"" style=""background-color: yellow;"">${foundSubstr.val}</span>`;
+
+          body =
+            body.slice(
+              0,
+              foundSubstr.index +
+                (replacement.length - foundSubstr.val.length) * ind
+            ) +
+            replacement +
+            body.slice(
+              foundSubstr.index +
+                foundSubstr.val.length +
+                (replacement.length - foundSubstr.val.length) * ind,
+              body.length
+            );
+        });
+
+        document.querySelector(""body"").innerHTML = body;
+
+        // then get all search-text values from document
+        foundElems = document.querySelectorAll(""span.search-text"");
+
+        currentIndex = 0;
+        foundElems[currentIndex].scrollIntoView(true);
+        foundElems[currentIndex].style.backgroundColor = ""orange"";
+      }
+
+      function getFoundItemsCount() {
+        return foundElems.length;
+      }
+
+      function getCurrentIndex() {
+        return currentIndex;
+      }
+
+      function scrollToNext() {
+        currentIndex++;
+        if (currentIndex >= foundElems.length) {
+          currentIndex--;
+          return;
+        }
+
+        // Clear previous selection
+        foundElems[currentIndex - 1].style.backgroundColor = ""yellow"";
+        foundElems[currentIndex].scrollIntoView(true);
+        foundElems[currentIndex].style.backgroundColor = ""orange"";
+      }
+
+      function scrollToPrevious() {
+        currentIndex--;
+        if (currentIndex >= 0) {
+          // Clear previous selection
+          foundElems[currentIndex + 1].style.backgroundColor = ""yellow"";
+
+          foundElems[currentIndex].scrollIntoView(true);
+          // Set current selection if prev item exist
+          foundElems[currentIndex].style.backgroundColor = ""orange"";
+        } else {
+          currentIndex++;
+        }
+      }
+
+      function saveScrollPosition() {
+        lastScrolled = window.pageYOffset;
+        return lastScrolled;
+      }
+
+      function scrollToLastPosition(position) {
+        document.documentElement.scrollTop = position;
+        document.body.scrollTop = position;
+      }
+
+      function clearSelection() {
+        if (!lastFoundText || foundElems.length == 0) {
+          return;
+        }
+
+        var regEx = new RegExp(lastFoundText, ""ig"");
+
+        let html = document.querySelector(""body"").innerHTML;
+
+        let found = html.match(regEx).filter(onlyUnique);
+
+        found.forEach((val, ind) => {
+          var stringToReplace = `<span class=""search-text"" style=""background-color: yellow;"">${val}</span>`;
+
+          html = html.replaceAll(stringToReplace, val);
+
+          html = html.replaceAll(
+            `<span class=""search-text"" style=""background-color: orange;"">${val}</span>`,
+            val
+          );
+        });
+
+        document.getElementsByTagName(""body"")[0].innerHTML = html;
+
+        lastFoundText = """";
+        currentIndex = 0;
+        foundElems = [];
+      }
 </script>
 ";
-
+html = html.Replace("<head>",
+  $"<head><meta name='viewport' content='width=device-width,initial-scale=1,maximum-scale=1' />");
 html = html.Replace("<head>", $"<head>{script}");
 
 // scrollable tables
@@ -121,6 +187,7 @@ html = html.Replace("<table", "<div style=\"overflow-x: auto\"><table");
 html = html.Replace("</table>", "</table></div>");
 
 // font-size
+/*
 var fontSizes = Regex.Matches(html, "font-size:([0-9.]*)pt");
 var differentFontSizes = fontSizes.Select(fontSize => fontSize.Groups[1].Value).Distinct().ToList();
 
@@ -133,7 +200,7 @@ foreach (var fontSize in differentFontSizes)
 foreach (var fontSizeToChange in oldFonrSizeToNewMap.Keys)
 {
     html = new StringBuilder(html).Replace($@"font-size:{fontSizeToChange}pt", $"font-size:{oldFonrSizeToNewMap[fontSizeToChange]}pt").ToString();
-}
+}*/
 
 // tables all width attributes)
 html = Regex.Replace(html, "<td width=[0-9]*", "<td");
@@ -149,4 +216,4 @@ Console.WriteLine(Regex.Replace(
 @"(<table[0-9a-zA-Z'\s=]*)width=[0-9.]*", "$1"));*/
 
 
-File.WriteAllText(@"D:\Additional Work\textbook\index.html", html);
+File.WriteAllText(@"C:\AdditionalWork\textbook\index.html", html);
